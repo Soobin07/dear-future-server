@@ -74,7 +74,7 @@ Dear Future는 사용자가 현재의 기록을 저장하고,
 
 ## Database
 
-- MySQL
+- postgresql
 
 ---
 
