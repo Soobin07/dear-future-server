@@ -17,6 +17,9 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+# Spring Config
+src/main/resources/application.yml
+
 ### IntelliJ IDEA ###
 .idea
 *.iws
