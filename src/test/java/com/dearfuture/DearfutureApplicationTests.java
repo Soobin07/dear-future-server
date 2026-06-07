@@ -226,4 +226,83 @@ class DearfutureApplicationTests {
                         .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isOk());
     }
+    
+    @Test
+    void 캡슐생성_토큰없음_실패() throws Exception {
+
+        String request = """
+                {
+                  "title":"미래의 나에게",
+                  "content":"잘 살고 있니?",
+                  "openAt":"2026-12-31T00:00:00"
+                }
+                """;
+
+        mockMvc.perform(
+                post("/api/capsules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request)
+        ).andExpect(status().isUnauthorized());
+    }
+    
+    @Test
+    void 캡슐생성_토큰있음_성공() throws Exception {
+
+        String signupRequest = """
+                {
+                  "email":"capsule@test.com",
+                  "password":"1234",
+                  "nickname":"capsuleUser"
+                }
+                """;
+
+        mockMvc.perform(
+                post("/api/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signupRequest)
+        ).andExpect(status().isCreated());
+
+        String loginRequest = """
+                {
+                  "email":"capsule@test.com",
+                  "password":"1234"
+                }
+                """;
+
+        String loginResponse = mockMvc.perform(
+                post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequest)
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.accessToken").exists())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+        String accessToken = objectMapper
+                .readTree(loginResponse)
+                .get("accessToken")
+                .asText();
+
+        String capsuleRequest = """
+                {
+                  "title":"미래의 나에게",
+                  "content":"잘 살고 있니?",
+                  "openAt":"2026-12-31T00:00:00"
+                }
+                """;
+
+        mockMvc.perform(
+                post("/api/capsules")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(capsuleRequest)
+        )
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").exists())
+        .andExpect(jsonPath("$.title").value("미래의 나에게"))
+        .andExpect(jsonPath("$.content").value("잘 살고 있니?"))
+        .andExpect(jsonPath("$.openAt").value("2026-12-31T00:00:00"));
+    }
 }
