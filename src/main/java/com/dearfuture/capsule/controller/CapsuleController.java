@@ -1,11 +1,19 @@
 package com.dearfuture.capsule.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.dearfuture.capsule.dto.CapsuleCreateRequest;
 import com.dearfuture.capsule.dto.CapsuleCreateResponse;
+import com.dearfuture.capsule.dto.CapsuleListResponse;
 import com.dearfuture.capsule.service.CapsuleService;
 
 import lombok.RequiredArgsConstructor;
@@ -26,5 +34,12 @@ public class CapsuleController {
         Long userId = (Long) authentication.getPrincipal();
 
         return capsuleService.createCapsule(userId, request);
+    }
+    
+    @GetMapping
+    public List<CapsuleListResponse> getMyCapsules(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+
+        return capsuleService.getMyCapsules(userId);
     }
 }

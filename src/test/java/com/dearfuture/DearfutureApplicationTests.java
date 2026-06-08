@@ -305,4 +305,76 @@ class DearfutureApplicationTests {
         .andExpect(jsonPath("$.content").value("잘 살고 있니?"))
         .andExpect(jsonPath("$.openAt").value("2026-12-31T00:00:00"));
     }
+    
+    @Test
+    void 캡슐목록조회_토큰없음_실패() throws Exception {
+
+        mockMvc.perform(
+                get("/api/capsules")
+        ).andExpect(status().isUnauthorized());
+    }
+    
+    @Test
+    void 캡슐목록조회_토큰있음_성공() throws Exception {
+
+        String signupRequest = """
+                {
+                  "email":"capsulelist@test.com",
+                  "password":"1234",
+                  "nickname":"capsuleListUser"
+                }
+                """;
+
+        mockMvc.perform(
+                post("/api/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signupRequest)
+        ).andExpect(status().isCreated());
+
+        String loginRequest = """
+                {
+                  "email":"capsulelist@test.com",
+                  "password":"1234"
+                }
+                """;
+
+        String loginResponse = mockMvc.perform(
+                post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequest)
+        )
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+        String accessToken = objectMapper
+                .readTree(loginResponse)
+                .get("accessToken")
+                .asText();
+
+        String capsuleRequest = """
+                {
+                  "title":"목록 조회용 캡슐",
+                  "content":"목록에 나와야 함",
+                  "openAt":"2026-12-31T00:00:00"
+                }
+                """;
+
+        mockMvc.perform(
+                post("/api/capsules")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(capsuleRequest)
+        ).andExpect(status().isCreated());
+
+        mockMvc.perform(
+                get("/api/capsules")
+                        .header("Authorization", "Bearer " + accessToken)
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").exists())
+        .andExpect(jsonPath("$[0].title").value("목록 조회용 캡슐"))
+        .andExpect(jsonPath("$[0].openAt").value("2026-12-31T00:00:00"));
+    }
 }

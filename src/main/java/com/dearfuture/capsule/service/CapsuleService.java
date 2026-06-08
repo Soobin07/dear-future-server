@@ -1,6 +1,7 @@
 package com.dearfuture.capsule.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.dearfuture.capsule.dto.CapsuleCreateRequest;
 import com.dearfuture.capsule.dto.CapsuleCreateResponse;
+import com.dearfuture.capsule.dto.CapsuleListResponse;
 import com.dearfuture.capsule.entity.Capsule;
 import com.dearfuture.capsule.repository.CapsuleRepository;
 import com.dearfuture.user.entity.User;
@@ -47,5 +49,19 @@ public class CapsuleService {
                 .openAt(savedCapsule.getOpenAt())
                 .createdAt(savedCapsule.getCreatedAt())
                 .build();
+    }
+    
+    public List<CapsuleListResponse> getMyCapsules(Long userId) {
+
+        List<Capsule> capsules = capsuleRepository.findAllByUserId(userId);
+
+        return capsules.stream()
+                .map(capsule -> CapsuleListResponse.builder()
+                        .id(capsule.getId())
+                        .title(capsule.getTitle())
+                        .openAt(capsule.getOpenAt())
+                        .createdAt(capsule.getCreatedAt())
+                        .build())
+                .toList();
     }
 }
