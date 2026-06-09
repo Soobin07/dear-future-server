@@ -2,6 +2,7 @@ package com.dearfuture;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -20,361 +21,368 @@ import tools.jackson.databind.ObjectMapper;
 @Transactional
 class DearfutureApplicationTests {
 
-    @Autowired
-    private MockMvc mockMvc;
-    
-    @Autowired
-    private ObjectMapper objectMapper;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @Test
-    void 회원가입테스트() throws Exception {
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
-        String request = """
-                {
-                  "email":"test@test.com",
-                  "password":"1234",
-                  "nickname":"test"
-                }
-                """;
+	@Test
+	void 회원가입테스트() throws Exception {
 
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(request)
-        )
-        .andExpect(status().isCreated());
-    }
-    
-    @Test
-    void 이메일중복테스트() throws Exception {
+		String request = """
+				{
+				  "email":"test@test.com",
+				  "password":"1234",
+				  "nickname":"test"
+				}
+				""";
 
-        String request = """
-                {
-                  "email":"duplicate@test.com",
-                  "password":"1234",
-                  "nickname":"user1"
-                }
-                """;
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(request))
+				.andExpect(status().isCreated());
+	}
 
-        // 첫 번째 가입
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(request)
-        ).andExpect(status().isCreated());
+	@Test
+	void 이메일중복테스트() throws Exception {
 
-        // 두 번째 가입 (같은 이메일)
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(request)
-        ).andExpect(status().isConflict());
-    }
-    
-    @Test
-    void 닉네임중복테스트() throws Exception {
+		String request = """
+				{
+				  "email":"duplicate@test.com",
+				  "password":"1234",
+				  "nickname":"user1"
+				}
+				""";
 
-        String firstRequest = """
-                {
-                  "email":"nickname1@test.com",
-                  "password":"1234",
-                  "nickname":"sameNickname"
-                }
-                """;
+		// 첫 번째 가입
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(request))
+				.andExpect(status().isCreated());
 
-        String secondRequest = """
-                {
-                  "email":"nickname2@test.com",
-                  "password":"1234",
-                  "nickname":"sameNickname"
-                }
-                """;
+		// 두 번째 가입 (같은 이메일)
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(request))
+				.andExpect(status().isConflict());
+	}
 
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(firstRequest)
-        ).andExpect(status().isCreated());
+	@Test
+	void 닉네임중복테스트() throws Exception {
 
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(secondRequest)
-        ).andExpect(status().isConflict());
-    }
-    
-    @Test
-    void 로그인성공테스트() throws Exception {
+		String firstRequest = """
+				{
+				  "email":"nickname1@test.com",
+				  "password":"1234",
+				  "nickname":"sameNickname"
+				}
+				""";
 
-        String signupRequest = """
-                {
-                  "email":"login@test.com",
-                  "password":"1234",
-                  "nickname":"loginUser"
-                }
-                """;
+		String secondRequest = """
+				{
+				  "email":"nickname2@test.com",
+				  "password":"1234",
+				  "nickname":"sameNickname"
+				}
+				""";
 
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signupRequest)
-        ).andExpect(status().isCreated());
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(firstRequest))
+				.andExpect(status().isCreated());
 
-        String loginRequest = """
-                {
-                  "email":"login@test.com",
-                  "password":"1234"
-                }
-                """;
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(secondRequest))
+				.andExpect(status().isConflict());
+	}
+
+	@Test
+	void 로그인성공테스트() throws Exception {
+
+		String signupRequest = """
+				{
+				  "email":"login@test.com",
+				  "password":"1234",
+				  "nickname":"loginUser"
+				}
+				""";
+
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
+
+		String loginRequest = """
+				{
+				  "email":"login@test.com",
+				  "password":"1234"
+				}
+				""";
 
 //        mockMvc.perform(
 //                post("/api/auth/login")
 //                        .contentType(MediaType.APPLICATION_JSON)
 //                        .content(loginRequest)
 //        ).andExpect(status().isOk());
-        
-        mockMvc.perform(
-                post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequest)
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.accessToken").exists());
-    }
-    
-    @Test
-    void 로그인실패테스트_비밀번호틀림() throws Exception {
 
-        String signupRequest = """
-                {
-                  "email":"loginfail@test.com",
-                  "password":"1234",
-                  "nickname":"loginFailUser"
-                }
-                """;
+		mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.accessToken").exists());
+	}
 
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signupRequest)
-        ).andExpect(status().isCreated());
+	@Test
+	void 로그인실패테스트_비밀번호틀림() throws Exception {
 
-        String loginRequest = """
-                {
-                  "email":"loginfail@test.com",
-                  "password":"wrongPassword"
-                }
-                """;
+		String signupRequest = """
+				{
+				  "email":"loginfail@test.com",
+				  "password":"1234",
+				  "nickname":"loginFailUser"
+				}
+				""";
 
-        mockMvc.perform(
-                post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequest)
-        ).andExpect(status().isUnauthorized());
-    }
-    
-    @Test
-    void 내정보조회_토큰없음_실패() throws Exception {
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
 
-        mockMvc.perform(
-                get("/api/auth/me")
-        ).andExpect(status().isUnauthorized());
-    }
-    
-    @Test
-    void 내정보조회_토큰있음_성공() throws Exception {
+		String loginRequest = """
+				{
+				  "email":"loginfail@test.com",
+				  "password":"wrongPassword"
+				}
+				""";
 
-        String signupRequest = """
-                {
-                  "email":"me@test.com",
-                  "password":"1234",
-                  "nickname":"meUser"
-                }
-                """;
+		mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isUnauthorized());
+	}
 
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signupRequest)
-        ).andExpect(status().isCreated());
+	@Test
+	void 내정보조회_토큰없음_실패() throws Exception {
 
-        String loginRequest = """
-                {
-                  "email":"me@test.com",
-                  "password":"1234"
-                }
-                """;
+		mockMvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized());
+	}
 
-        String response = mockMvc.perform(
-                post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequest)
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.accessToken").exists())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
+	@Test
+	void 내정보조회_토큰있음_성공() throws Exception {
 
-        String accessToken = objectMapper
-                .readTree(response)
-                .get("accessToken")
-                .asText();
+		String signupRequest = """
+				{
+				  "email":"me@test.com",
+				  "password":"1234",
+				  "nickname":"meUser"
+				}
+				""";
 
-        mockMvc.perform(
-                get("/api/auth/me")
-                        .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk());
-    }
-    
-    @Test
-    void 캡슐생성_토큰없음_실패() throws Exception {
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
 
-        String request = """
-                {
-                  "title":"미래의 나에게",
-                  "content":"잘 살고 있니?",
-                  "openAt":"2026-12-31T00:00:00"
-                }
-                """;
+		String loginRequest = """
+				{
+				  "email":"me@test.com",
+				  "password":"1234"
+				}
+				""";
 
-        mockMvc.perform(
-                post("/api/capsules")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(request)
-        ).andExpect(status().isUnauthorized());
-    }
-    
-    @Test
-    void 캡슐생성_토큰있음_성공() throws Exception {
+		String response = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.accessToken").exists()).andReturn().getResponse()
+				.getContentAsString();
 
-        String signupRequest = """
-                {
-                  "email":"capsule@test.com",
-                  "password":"1234",
-                  "nickname":"capsuleUser"
-                }
-                """;
+		String accessToken = objectMapper.readTree(response).get("accessToken").asText();
 
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signupRequest)
-        ).andExpect(status().isCreated());
+		mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + accessToken))
+				.andExpect(status().isOk());
+	}
 
-        String loginRequest = """
-                {
-                  "email":"capsule@test.com",
-                  "password":"1234"
-                }
-                """;
+	@Test
+	void 캡슐생성_토큰없음_실패() throws Exception {
 
-        String loginResponse = mockMvc.perform(
-                post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequest)
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.accessToken").exists())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
+		String request = """
+				{
+				  "title":"미래의 나에게",
+				  "content":"잘 살고 있니?",
+				  "openAt":"2026-12-31T00:00:00"
+				}
+				""";
 
-        String accessToken = objectMapper
-                .readTree(loginResponse)
-                .get("accessToken")
-                .asText();
+		mockMvc.perform(post("/api/capsules").contentType(MediaType.APPLICATION_JSON).content(request))
+				.andExpect(status().isUnauthorized());
+	}
 
-        String capsuleRequest = """
-                {
-                  "title":"미래의 나에게",
-                  "content":"잘 살고 있니?",
-                  "openAt":"2026-12-31T00:00:00"
-                }
-                """;
+	@Test
+	void 캡슐생성_토큰있음_성공() throws Exception {
 
-        mockMvc.perform(
-                post("/api/capsules")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(capsuleRequest)
-        )
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id").exists())
-        .andExpect(jsonPath("$.title").value("미래의 나에게"))
-        .andExpect(jsonPath("$.content").value("잘 살고 있니?"))
-        .andExpect(jsonPath("$.openAt").value("2026-12-31T00:00:00"));
-    }
-    
-    @Test
-    void 캡슐목록조회_토큰없음_실패() throws Exception {
+		String signupRequest = """
+				{
+				  "email":"capsule@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleUser"
+				}
+				""";
 
-        mockMvc.perform(
-                get("/api/capsules")
-        ).andExpect(status().isUnauthorized());
-    }
-    
-    @Test
-    void 캡슐목록조회_토큰있음_성공() throws Exception {
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
 
-        String signupRequest = """
-                {
-                  "email":"capsulelist@test.com",
-                  "password":"1234",
-                  "nickname":"capsuleListUser"
-                }
-                """;
+		String loginRequest = """
+				{
+				  "email":"capsule@test.com",
+				  "password":"1234"
+				}
+				""";
 
-        mockMvc.perform(
-                post("/api/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signupRequest)
-        ).andExpect(status().isCreated());
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.accessToken").exists()).andReturn().getResponse()
+				.getContentAsString();
 
-        String loginRequest = """
-                {
-                  "email":"capsulelist@test.com",
-                  "password":"1234"
-                }
-                """;
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
 
-        String loginResponse = mockMvc.perform(
-                post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequest)
-        )
-        .andExpect(status().isOk())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
+		String capsuleRequest = """
+				{
+				  "title":"미래의 나에게",
+				  "content":"잘 살고 있니?",
+				  "openAt":"2026-12-31T00:00:00"
+				}
+				""";
 
-        String accessToken = objectMapper
-                .readTree(loginResponse)
-                .get("accessToken")
-                .asText();
+		mockMvc.perform(post("/api/capsules").header("Authorization", "Bearer " + accessToken)
+				.contentType(MediaType.APPLICATION_JSON).content(capsuleRequest)).andExpect(status().isCreated())
+				.andExpect(jsonPath("$.id").exists()).andExpect(jsonPath("$.title").value("미래의 나에게"))
+				.andExpect(jsonPath("$.content").value("잘 살고 있니?"))
+				.andExpect(jsonPath("$.openAt").value("2026-12-31T00:00:00"));
+	}
 
-        String capsuleRequest = """
-                {
-                  "title":"목록 조회용 캡슐",
-                  "content":"목록에 나와야 함",
-                  "openAt":"2026-12-31T00:00:00"
-                }
-                """;
+	@Test
+	void 캡슐목록조회_토큰없음_실패() throws Exception {
 
-        mockMvc.perform(
-                post("/api/capsules")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(capsuleRequest)
-        ).andExpect(status().isCreated());
+		mockMvc.perform(get("/api/capsules")).andExpect(status().isUnauthorized());
+	}
 
-        mockMvc.perform(
-                get("/api/capsules")
-                        .header("Authorization", "Bearer " + accessToken)
-        )
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].id").exists())
-        .andExpect(jsonPath("$[0].title").value("목록 조회용 캡슐"))
-        .andExpect(jsonPath("$[0].openAt").value("2026-12-31T00:00:00"));
-    }
+	@Test
+	void 캡슐목록조회_토큰있음_성공() throws Exception {
+
+		String signupRequest = """
+				{
+				  "email":"capsulelist@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleListUser"
+				}
+				""";
+
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
+
+		String loginRequest = """
+				{
+				  "email":"capsulelist@test.com",
+				  "password":"1234"
+				}
+				""";
+
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
+
+		String capsuleRequest = """
+				{
+				  "title":"목록 조회용 캡슐",
+				  "content":"목록에 나와야 함",
+				  "openAt":"2026-12-31T00:00:00"
+				}
+				""";
+
+		mockMvc.perform(post("/api/capsules").header("Authorization", "Bearer " + accessToken)
+				.contentType(MediaType.APPLICATION_JSON).content(capsuleRequest)).andExpect(status().isCreated());
+
+		mockMvc.perform(get("/api/capsules").header("Authorization", "Bearer " + accessToken))
+				.andExpect(status().isOk()).andExpect(jsonPath("$[0].id").exists())
+				.andExpect(jsonPath("$[0].title").value("목록 조회용 캡슐"))
+				.andExpect(jsonPath("$[0].openAt").value("2026-12-31T00:00:00"));
+	}
+
+	@Test
+	void 캡슐단건조회_토큰없음_실패() throws Exception {
+
+		mockMvc.perform(get("/api/capsules/1")).andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void 캡슐단건조회_본인캡슐_성공() throws Exception {
+
+		String signupRequest = """
+				{
+				  "email":"capsuledetail@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleDetailUser"
+				}
+				""";
+
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
+
+		String loginRequest = """
+				{
+				  "email":"capsuledetail@test.com",
+				  "password":"1234"
+				}
+				""";
+
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
+
+		String capsuleRequest = """
+				{
+				  "title":"단건 조회용 캡슐",
+				  "content":"단건 조회 내용",
+				  "openAt":"2026-12-31T00:00:00"
+				}
+				""";
+
+		String capsuleResponse = mockMvc
+				.perform(post("/api/capsules").header("Authorization", "Bearer " + accessToken)
+						.contentType(MediaType.APPLICATION_JSON).content(capsuleRequest))
+				.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+
+		System.out.println("capsuleResponse = " + capsuleResponse);
+		
+		Long capsuleId = objectMapper.readTree(capsuleResponse).get("id").asLong();
+
+		System.out.println("capsuleId = " + capsuleId);
+		System.out.println("GET 실행");
+
+		try {
+		    mockMvc.perform(
+		            get("/api/capsules/" + capsuleId)
+		                    .header("Authorization", "Bearer " + accessToken)
+		    )
+		    .andDo(print())
+		    .andExpect(status().isOk());
+		} catch (Exception e) {
+		    e.printStackTrace();
+		    throw e;
+		}
+	}
+
+	@Test
+	void 캡슐단건조회_존재하지않음_실패() throws Exception {
+
+		String signupRequest = """
+				{
+				  "email":"capsulenotfound@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleNotFoundUser"
+				}
+				""";
+
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
+
+		String loginRequest = """
+				{
+				  "email":"capsulenotfound@test.com",
+				  "password":"1234"
+				}
+				""";
+
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
+
+		mockMvc.perform(get("/api/capsules/999999").header("Authorization", "Bearer " + accessToken)).andDo(print())
+				.andExpect(status().isNotFound());
+	}
 }

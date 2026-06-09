@@ -5,10 +5,12 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.dearfuture.capsule.dto.CapsuleCreateRequest;
 import com.dearfuture.capsule.dto.CapsuleCreateResponse;
+import com.dearfuture.capsule.dto.CapsuleDetailResponse;
 import com.dearfuture.capsule.dto.CapsuleListResponse;
 import com.dearfuture.capsule.entity.Capsule;
 import com.dearfuture.capsule.repository.CapsuleRepository;
@@ -19,11 +21,13 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CapsuleService {
 
     private final CapsuleRepository capsuleRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public CapsuleCreateResponse createCapsule(Long userId, CapsuleCreateRequest request) {
 
         User user = userRepository.findById(userId)
@@ -63,5 +67,30 @@ public class CapsuleService {
                         .createdAt(capsule.getCreatedAt())
                         .build())
                 .toList();
+    }
+    
+    public CapsuleDetailResponse getCapsule(Long userId, Long capsuleId) {
+
+        Capsule capsule = capsuleRepository.findById(capsuleId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "캡슐을 찾을 수 없습니다."
+                ));
+
+        if (!capsule.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "해당 캡슐에 접근할 수 없습니다."
+            );
+        }
+
+        return CapsuleDetailResponse.builder()
+                .id(capsule.getId())
+                .title(capsule.getTitle())
+                .content(capsule.getContent())
+                .openAt(capsule.getOpenAt())
+                .createdAt(capsule.getCreatedAt())
+                .updatedAt(capsule.getUpdatedAt())
+                .build();
     }
 }
