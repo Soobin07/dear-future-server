@@ -12,6 +12,8 @@ import com.dearfuture.capsule.dto.CapsuleCreateRequest;
 import com.dearfuture.capsule.dto.CapsuleCreateResponse;
 import com.dearfuture.capsule.dto.CapsuleDetailResponse;
 import com.dearfuture.capsule.dto.CapsuleListResponse;
+import com.dearfuture.capsule.dto.CapsuleUpdateRequest;
+import com.dearfuture.capsule.dto.CapsuleUpdateResponse;
 import com.dearfuture.capsule.entity.Capsule;
 import com.dearfuture.capsule.repository.CapsuleRepository;
 import com.dearfuture.user.entity.User;
@@ -90,6 +92,40 @@ public class CapsuleService {
                 .content(capsule.getContent())
                 .openAt(capsule.getOpenAt())
                 .createdAt(capsule.getCreatedAt())
+                .updatedAt(capsule.getUpdatedAt())
+                .build();
+    }
+    
+    @Transactional
+    public CapsuleUpdateResponse updateCapsule(
+            Long userId,
+            Long capsuleId,
+            CapsuleUpdateRequest request
+    ) {
+        Capsule capsule = capsuleRepository.findById(capsuleId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "캡슐을 찾을 수 없습니다."
+                ));
+
+        if (!capsule.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "해당 캡슐을 수정할 수 없습니다."
+            );
+        }
+
+        capsule.update(
+                request.getTitle(),
+                request.getContent(),
+                request.getOpenAt()
+        );
+
+        return CapsuleUpdateResponse.builder()
+                .id(capsule.getId())
+                .title(capsule.getTitle())
+                .content(capsule.getContent())
+                .openAt(capsule.getOpenAt())
                 .updatedAt(capsule.getUpdatedAt())
                 .build();
     }

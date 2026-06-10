@@ -2,6 +2,7 @@ package com.dearfuture;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -336,22 +337,18 @@ class DearfutureApplicationTests {
 				.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
 		System.out.println("capsuleResponse = " + capsuleResponse);
-		
+
 		Long capsuleId = objectMapper.readTree(capsuleResponse).get("id").asLong();
 
 		System.out.println("capsuleId = " + capsuleId);
 		System.out.println("GET 실행");
 
 		try {
-		    mockMvc.perform(
-		            get("/api/capsules/" + capsuleId)
-		                    .header("Authorization", "Bearer " + accessToken)
-		    )
-		    .andDo(print())
-		    .andExpect(status().isOk());
+			mockMvc.perform(get("/api/capsules/" + capsuleId).header("Authorization", "Bearer " + accessToken))
+					.andDo(print()).andExpect(status().isOk());
 		} catch (Exception e) {
-		    e.printStackTrace();
-		    throw e;
+			e.printStackTrace();
+			throw e;
 		}
 	}
 
@@ -384,5 +381,117 @@ class DearfutureApplicationTests {
 
 		mockMvc.perform(get("/api/capsules/999999").header("Authorization", "Bearer " + accessToken)).andDo(print())
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void 캡슐수정_토큰없음_실패() throws Exception {
+
+		String updateRequest = """
+				{
+				  "title":"수정된 제목",
+				  "content":"수정된 내용",
+				  "openAt":"2027-01-01T00:00:00"
+				}
+				""";
+
+		mockMvc.perform(put("/api/capsules/1").contentType(MediaType.APPLICATION_JSON).content(updateRequest))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void 캡슐수정_본인캡슐_성공() throws Exception {
+
+		String signupRequest = """
+				{
+				  "email":"capsuleupdate@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleUpdateUser"
+				}
+				""";
+
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
+
+		String loginRequest = """
+				{
+				  "email":"capsuleupdate@test.com",
+				  "password":"1234"
+				}
+				""";
+
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
+
+		String createRequest = """
+				{
+				  "title":"원래 제목",
+				  "content":"원래 내용",
+				  "openAt":"2026-12-31T00:00:00"
+				}
+				""";
+
+		String createResponse = mockMvc
+				.perform(post("/api/capsules").header("Authorization", "Bearer " + accessToken)
+						.contentType(MediaType.APPLICATION_JSON).content(createRequest))
+				.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+
+		Long capsuleId = objectMapper.readTree(createResponse).get("id").asLong();
+
+		String updateRequest = """
+				{
+				  "title":"수정된 제목",
+				  "content":"수정된 내용",
+				  "openAt":"2027-01-01T00:00:00"
+				}
+				""";
+
+		mockMvc.perform(put("/api/capsules/" + capsuleId).header("Authorization", "Bearer " + accessToken)
+				.contentType(MediaType.APPLICATION_JSON).content(updateRequest)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(capsuleId)).andExpect(jsonPath("$.title").value("수정된 제목"))
+				.andExpect(jsonPath("$.content").value("수정된 내용"))
+				.andExpect(jsonPath("$.openAt").value("2027-01-01T00:00:00"))
+				.andExpect(jsonPath("$.updatedAt").exists());
+	}
+
+	@Test
+	void 캡슐수정_존재하지않음_실패() throws Exception {
+
+		String signupRequest = """
+				{
+				  "email":"capsuleupdatenotfound@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleUpdateNotFoundUser"
+				}
+				""";
+
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
+
+		String loginRequest = """
+				{
+				  "email":"capsuleupdatenotfound@test.com",
+				  "password":"1234"
+				}
+				""";
+
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
+
+		String updateRequest = """
+				{
+				  "title":"수정된 제목",
+				  "content":"수정된 내용",
+				  "openAt":"2027-01-01T00:00:00"
+				}
+				""";
+
+		mockMvc.perform(put("/api/capsules/999999").header("Authorization", "Bearer " + accessToken)
+				.contentType(MediaType.APPLICATION_JSON).content(updateRequest)).andExpect(status().isNotFound());
 	}
 }

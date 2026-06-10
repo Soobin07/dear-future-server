@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -16,6 +17,8 @@ import com.dearfuture.capsule.dto.CapsuleCreateRequest;
 import com.dearfuture.capsule.dto.CapsuleCreateResponse;
 import com.dearfuture.capsule.dto.CapsuleDetailResponse;
 import com.dearfuture.capsule.dto.CapsuleListResponse;
+import com.dearfuture.capsule.dto.CapsuleUpdateRequest;
+import com.dearfuture.capsule.dto.CapsuleUpdateResponse;
 import com.dearfuture.capsule.service.CapsuleService;
 
 import lombok.RequiredArgsConstructor;
@@ -53,5 +56,16 @@ public class CapsuleController {
         Long userId = (Long) authentication.getPrincipal();
 
         return capsuleService.getCapsule(userId, capsuleId);
+    }
+    
+    @PutMapping("/{capsuleId}")
+    public CapsuleUpdateResponse updateCapsule(
+            Authentication authentication,
+            @PathVariable("capsuleId") Long capsuleId,
+            @RequestBody CapsuleUpdateRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+
+        return capsuleService.updateCapsule(userId, capsuleId, request);
     }
 }
