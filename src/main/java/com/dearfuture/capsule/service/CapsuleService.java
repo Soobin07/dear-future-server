@@ -129,4 +129,23 @@ public class CapsuleService {
                 .updatedAt(capsule.getUpdatedAt())
                 .build();
     }
+    
+    @Transactional
+    public void deleteCapsule(Long userId, Long capsuleId) {
+
+        Capsule capsule = capsuleRepository.findById(capsuleId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "캡슐을 찾을 수 없습니다."
+                ));
+
+        if (!capsule.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "해당 캡슐을 삭제할 수 없습니다."
+            );
+        }
+
+        capsuleRepository.delete(capsule);
+    }
 }

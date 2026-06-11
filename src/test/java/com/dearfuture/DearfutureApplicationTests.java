@@ -1,5 +1,6 @@
 package com.dearfuture;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -493,5 +494,121 @@ class DearfutureApplicationTests {
 
 		mockMvc.perform(put("/api/capsules/999999").header("Authorization", "Bearer " + accessToken)
 				.contentType(MediaType.APPLICATION_JSON).content(updateRequest)).andExpect(status().isNotFound());
+	}
+	
+	@Test
+	void 캡슐삭제_토큰없음_실패() throws Exception {
+
+	    mockMvc.perform(
+	            delete("/api/capsules/1")
+	    ).andExpect(status().isUnauthorized());
+	}
+	
+	@Test
+	void 캡슐삭제_본인캡슐_성공() throws Exception {
+
+	    String signupRequest = """
+	            {
+	              "email":"capsuledelete@test.com",
+	              "password":"1234",
+	              "nickname":"capsuleDeleteUser"
+	            }
+	            """;
+
+	    mockMvc.perform(post("/api/users/signup")
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(signupRequest))
+	            .andExpect(status().isCreated());
+
+	    String loginRequest = """
+	            {
+	              "email":"capsuledelete@test.com",
+	              "password":"1234"
+	            }
+	            """;
+
+	    String loginResponse = mockMvc.perform(post("/api/auth/login")
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(loginRequest))
+	            .andExpect(status().isOk())
+	            .andReturn()
+	            .getResponse()
+	            .getContentAsString();
+
+	    String accessToken = objectMapper
+	            .readTree(loginResponse)
+	            .get("accessToken")
+	            .asText();
+
+	    String createRequest = """
+	            {
+	              "title":"삭제할 캡슐",
+	              "content":"삭제용 내용",
+	              "openAt":"2026-12-31T00:00:00"
+	            }
+	            """;
+
+	    String createResponse = mockMvc.perform(post("/api/capsules")
+	            .header("Authorization", "Bearer " + accessToken)
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(createRequest))
+	            .andExpect(status().isCreated())
+	            .andReturn()
+	            .getResponse()
+	            .getContentAsString();
+
+	    Long capsuleId = objectMapper
+	            .readTree(createResponse)
+	            .get("id")
+	            .asLong();
+
+	    mockMvc.perform(delete("/api/capsules/" + capsuleId)
+	            .header("Authorization", "Bearer " + accessToken))
+	            .andExpect(status().isNoContent());
+
+	    mockMvc.perform(get("/api/capsules/" + capsuleId)
+	            .header("Authorization", "Bearer " + accessToken))
+	            .andExpect(status().isNotFound());
+	}
+	
+	@Test
+	void 캡슐삭제_존재하지않음_실패() throws Exception {
+
+	    String signupRequest = """
+	            {
+	              "email":"capsuledeletenotfound@test.com",
+	              "password":"1234",
+	              "nickname":"capsuleDeleteNotFoundUser"
+	            }
+	            """;
+
+	    mockMvc.perform(post("/api/users/signup")
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(signupRequest))
+	            .andExpect(status().isCreated());
+
+	    String loginRequest = """
+	            {
+	              "email":"capsuledeletenotfound@test.com",
+	              "password":"1234"
+	            }
+	            """;
+
+	    String loginResponse = mockMvc.perform(post("/api/auth/login")
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(loginRequest))
+	            .andExpect(status().isOk())
+	            .andReturn()
+	            .getResponse()
+	            .getContentAsString();
+
+	    String accessToken = objectMapper
+	            .readTree(loginResponse)
+	            .get("accessToken")
+	            .asText();
+
+	    mockMvc.perform(delete("/api/capsules/999999")
+	            .header("Authorization", "Bearer " + accessToken))
+	            .andExpect(status().isNotFound());
 	}
 }
