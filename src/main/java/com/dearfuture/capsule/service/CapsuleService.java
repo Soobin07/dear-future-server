@@ -85,6 +85,13 @@ public class CapsuleService {
                     "해당 캡슐에 접근할 수 없습니다."
             );
         }
+        
+        if (LocalDateTime.now().isBefore(capsule.getOpenAt())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "아직 열 수 없는 캡슐입니다."
+            );
+        }
 
         return CapsuleDetailResponse.builder()
                 .id(capsule.getId())

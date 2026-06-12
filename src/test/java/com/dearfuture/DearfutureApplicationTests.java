@@ -328,7 +328,7 @@ class DearfutureApplicationTests {
 				{
 				  "title":"단건 조회용 캡슐",
 				  "content":"단건 조회 내용",
-				  "openAt":"2026-12-31T00:00:00"
+				  "openAt":"2025-12-31T00:00:00"
 				}
 				""";
 
@@ -610,5 +610,68 @@ class DearfutureApplicationTests {
 	    mockMvc.perform(delete("/api/capsules/999999")
 	            .header("Authorization", "Bearer " + accessToken))
 	            .andExpect(status().isNotFound());
+	}
+	
+	@Test
+	void 캡슐단건조회_아직열수없음_실패() throws Exception {
+
+	    String signupRequest = """
+	            {
+	              "email":"capsulelocked@test.com",
+	              "password":"1234",
+	              "nickname":"capsuleLockedUser"
+	            }
+	            """;
+
+	    mockMvc.perform(post("/api/users/signup")
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(signupRequest))
+	            .andExpect(status().isCreated());
+
+	    String loginRequest = """
+	            {
+	              "email":"capsulelocked@test.com",
+	              "password":"1234"
+	            }
+	            """;
+
+	    String loginResponse = mockMvc.perform(post("/api/auth/login")
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(loginRequest))
+	            .andExpect(status().isOk())
+	            .andReturn()
+	            .getResponse()
+	            .getContentAsString();
+
+	    String accessToken = objectMapper
+	            .readTree(loginResponse)
+	            .get("accessToken")
+	            .asText();
+
+	    String createRequest = """
+	            {
+	              "title":"아직 열 수 없는 캡슐",
+	              "content":"미래에만 볼 수 있는 내용",
+	              "openAt":"2026-12-31T00:00:00"
+	            }
+	            """;
+
+	    String createResponse = mockMvc.perform(post("/api/capsules")
+	            .header("Authorization", "Bearer " + accessToken)
+	            .contentType(MediaType.APPLICATION_JSON)
+	            .content(createRequest))
+	            .andExpect(status().isCreated())
+	            .andReturn()
+	            .getResponse()
+	            .getContentAsString();
+
+	    Long capsuleId = objectMapper
+	            .readTree(createResponse)
+	            .get("id")
+	            .asLong();
+
+	    mockMvc.perform(get("/api/capsules/" + capsuleId)
+	            .header("Authorization", "Bearer " + accessToken))
+	            .andExpect(status().isForbidden());
 	}
 }
