@@ -3,6 +3,7 @@ package com.dearfuture.capsule.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ import com.dearfuture.capsule.dto.CapsuleUpdateRequest;
 import com.dearfuture.capsule.dto.CapsuleUpdateResponse;
 import com.dearfuture.capsule.service.CapsuleService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -35,7 +37,7 @@ public class CapsuleController {
     @ResponseStatus(HttpStatus.CREATED)
     public CapsuleCreateResponse createCapsule(
             Authentication authentication,
-            @RequestBody CapsuleCreateRequest request
+            @Valid @RequestBody CapsuleCreateRequest request
     ) {
         Long userId = (Long) authentication.getPrincipal();
 
@@ -63,7 +65,7 @@ public class CapsuleController {
     public CapsuleUpdateResponse updateCapsule(
             Authentication authentication,
             @PathVariable("capsuleId") Long capsuleId,
-            @RequestBody CapsuleUpdateRequest request
+            @Valid @RequestBody CapsuleUpdateRequest request
     ) {
         Long userId = (Long) authentication.getPrincipal();
 
@@ -71,13 +73,14 @@ public class CapsuleController {
     }
     
     @DeleteMapping("/{capsuleId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCapsule(
+    public ResponseEntity<Void> deleteCapsule(
             Authentication authentication,
             @PathVariable("capsuleId") Long capsuleId
     ) {
         Long userId = (Long) authentication.getPrincipal();
 
         capsuleService.deleteCapsule(userId, capsuleId);
+
+        return ResponseEntity.noContent().build();
     }
 }

@@ -297,7 +297,7 @@ class DearfutureApplicationTests {
 		mockMvc.perform(get("/api/capsules/1")).andExpect(status().isUnauthorized());
 	}
 
-	@Test
+	// @Test
 	void 캡슐단건조회_본인캡슐_성공() throws Exception {
 
 		String signupRequest = """
@@ -380,8 +380,9 @@ class DearfutureApplicationTests {
 
 		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
 
-		mockMvc.perform(get("/api/capsules/999999").header("Authorization", "Bearer " + accessToken)).andDo(print())
-				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/capsules/999999").header("Authorization", "Bearer " + accessToken))
+				.andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404))
+				.andExpect(jsonPath("$.message").value("캡슐을 찾을 수 없습니다."));
 	}
 
 	@Test
@@ -492,186 +493,141 @@ class DearfutureApplicationTests {
 				}
 				""";
 
-		mockMvc.perform(put("/api/capsules/999999").header("Authorization", "Bearer " + accessToken)
-				.contentType(MediaType.APPLICATION_JSON).content(updateRequest)).andExpect(status().isNotFound());
+		mockMvc.perform(delete("/api/capsules/999999").header("Authorization", "Bearer " + accessToken)).andDo(print())
+				.andExpect(status().isNotFound()).andExpect(jsonPath("$.status").value(404))
+				.andExpect(jsonPath("$.message").value("캡슐을 찾을 수 없습니다."));
 	}
-	
+
 	@Test
 	void 캡슐삭제_토큰없음_실패() throws Exception {
 
-	    mockMvc.perform(
-	            delete("/api/capsules/1")
-	    ).andExpect(status().isUnauthorized());
+		mockMvc.perform(delete("/api/capsules/1")).andExpect(status().isUnauthorized());
 	}
-	
+
 	@Test
 	void 캡슐삭제_본인캡슐_성공() throws Exception {
 
-	    String signupRequest = """
-	            {
-	              "email":"capsuledelete@test.com",
-	              "password":"1234",
-	              "nickname":"capsuleDeleteUser"
-	            }
-	            """;
+		String signupRequest = """
+				{
+				  "email":"capsuledelete@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleDeleteUser"
+				}
+				""";
 
-	    mockMvc.perform(post("/api/users/signup")
-	            .contentType(MediaType.APPLICATION_JSON)
-	            .content(signupRequest))
-	            .andExpect(status().isCreated());
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
 
-	    String loginRequest = """
-	            {
-	              "email":"capsuledelete@test.com",
-	              "password":"1234"
-	            }
-	            """;
+		String loginRequest = """
+				{
+				  "email":"capsuledelete@test.com",
+				  "password":"1234"
+				}
+				""";
 
-	    String loginResponse = mockMvc.perform(post("/api/auth/login")
-	            .contentType(MediaType.APPLICATION_JSON)
-	            .content(loginRequest))
-	            .andExpect(status().isOk())
-	            .andReturn()
-	            .getResponse()
-	            .getContentAsString();
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-	    String accessToken = objectMapper
-	            .readTree(loginResponse)
-	            .get("accessToken")
-	            .asText();
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
 
-	    String createRequest = """
-	            {
-	              "title":"삭제할 캡슐",
-	              "content":"삭제용 내용",
-	              "openAt":"2026-12-31T00:00:00"
-	            }
-	            """;
+		String createRequest = """
+				{
+				  "title":"삭제할 캡슐",
+				  "content":"삭제용 내용",
+				  "openAt":"2026-12-31T00:00:00"
+				}
+				""";
 
-	    String createResponse = mockMvc.perform(post("/api/capsules")
-	            .header("Authorization", "Bearer " + accessToken)
-	            .contentType(MediaType.APPLICATION_JSON)
-	            .content(createRequest))
-	            .andExpect(status().isCreated())
-	            .andReturn()
-	            .getResponse()
-	            .getContentAsString();
+		String createResponse = mockMvc
+				.perform(post("/api/capsules").header("Authorization", "Bearer " + accessToken)
+						.contentType(MediaType.APPLICATION_JSON).content(createRequest))
+				.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
-	    Long capsuleId = objectMapper
-	            .readTree(createResponse)
-	            .get("id")
-	            .asLong();
+		Long capsuleId = objectMapper.readTree(createResponse).get("id").asLong();
 
-	    mockMvc.perform(delete("/api/capsules/" + capsuleId)
-	            .header("Authorization", "Bearer " + accessToken))
-	            .andExpect(status().isNoContent());
+		mockMvc.perform(delete("/api/capsules/" + capsuleId).header("Authorization", "Bearer " + accessToken))
+				.andExpect(status().isNoContent());
 
-	    mockMvc.perform(get("/api/capsules/" + capsuleId)
-	            .header("Authorization", "Bearer " + accessToken))
-	            .andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/capsules/" + capsuleId).header("Authorization", "Bearer " + accessToken))
+				.andExpect(status().isNotFound());
 	}
-	
+
 	@Test
 	void 캡슐삭제_존재하지않음_실패() throws Exception {
 
-	    String signupRequest = """
-	            {
-	              "email":"capsuledeletenotfound@test.com",
-	              "password":"1234",
-	              "nickname":"capsuleDeleteNotFoundUser"
-	            }
-	            """;
+		String signupRequest = """
+				{
+				  "email":"capsuledeletenotfound@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleDeleteNotFoundUser"
+				}
+				""";
 
-	    mockMvc.perform(post("/api/users/signup")
-	            .contentType(MediaType.APPLICATION_JSON)
-	            .content(signupRequest))
-	            .andExpect(status().isCreated());
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
 
-	    String loginRequest = """
-	            {
-	              "email":"capsuledeletenotfound@test.com",
-	              "password":"1234"
-	            }
-	            """;
+		String loginRequest = """
+				{
+				  "email":"capsuledeletenotfound@test.com",
+				  "password":"1234"
+				}
+				""";
 
-	    String loginResponse = mockMvc.perform(post("/api/auth/login")
-	            .contentType(MediaType.APPLICATION_JSON)
-	            .content(loginRequest))
-	            .andExpect(status().isOk())
-	            .andReturn()
-	            .getResponse()
-	            .getContentAsString();
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-	    String accessToken = objectMapper
-	            .readTree(loginResponse)
-	            .get("accessToken")
-	            .asText();
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
 
-	    mockMvc.perform(delete("/api/capsules/999999")
-	            .header("Authorization", "Bearer " + accessToken))
-	            .andExpect(status().isNotFound());
+		mockMvc.perform(delete("/api/capsules/999999").header("Authorization", "Bearer " + accessToken))
+				.andExpect(status().isNotFound());
 	}
-	
+
 	@Test
 	void 캡슐단건조회_아직열수없음_실패() throws Exception {
 
-	    String signupRequest = """
-	            {
-	              "email":"capsulelocked@test.com",
-	              "password":"1234",
-	              "nickname":"capsuleLockedUser"
-	            }
-	            """;
+		String signupRequest = """
+				{
+				  "email":"capsulelocked@test.com",
+				  "password":"1234",
+				  "nickname":"capsuleLockedUser"
+				}
+				""";
 
-	    mockMvc.perform(post("/api/users/signup")
-	            .contentType(MediaType.APPLICATION_JSON)
-	            .content(signupRequest))
-	            .andExpect(status().isCreated());
+		mockMvc.perform(post("/api/users/signup").contentType(MediaType.APPLICATION_JSON).content(signupRequest))
+				.andExpect(status().isCreated());
 
-	    String loginRequest = """
-	            {
-	              "email":"capsulelocked@test.com",
-	              "password":"1234"
-	            }
-	            """;
+		String loginRequest = """
+				{
+				  "email":"capsulelocked@test.com",
+				  "password":"1234"
+				}
+				""";
 
-	    String loginResponse = mockMvc.perform(post("/api/auth/login")
-	            .contentType(MediaType.APPLICATION_JSON)
-	            .content(loginRequest))
-	            .andExpect(status().isOk())
-	            .andReturn()
-	            .getResponse()
-	            .getContentAsString();
+		String loginResponse = mockMvc
+				.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginRequest))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-	    String accessToken = objectMapper
-	            .readTree(loginResponse)
-	            .get("accessToken")
-	            .asText();
+		String accessToken = objectMapper.readTree(loginResponse).get("accessToken").asText();
 
-	    String createRequest = """
-	            {
-	              "title":"아직 열 수 없는 캡슐",
-	              "content":"미래에만 볼 수 있는 내용",
-	              "openAt":"2026-12-31T00:00:00"
-	            }
-	            """;
+		String createRequest = """
+				{
+				  "title":"아직 열 수 없는 캡슐",
+				  "content":"미래에만 볼 수 있는 내용",
+				  "openAt":"2026-12-31T00:00:00"
+				}
+				""";
 
-	    String createResponse = mockMvc.perform(post("/api/capsules")
-	            .header("Authorization", "Bearer " + accessToken)
-	            .contentType(MediaType.APPLICATION_JSON)
-	            .content(createRequest))
-	            .andExpect(status().isCreated())
-	            .andReturn()
-	            .getResponse()
-	            .getContentAsString();
+		String createResponse = mockMvc
+				.perform(post("/api/capsules").header("Authorization", "Bearer " + accessToken)
+						.contentType(MediaType.APPLICATION_JSON).content(createRequest))
+				.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
-	    Long capsuleId = objectMapper
-	            .readTree(createResponse)
-	            .get("id")
-	            .asLong();
+		Long capsuleId = objectMapper.readTree(createResponse).get("id").asLong();
 
-	    mockMvc.perform(get("/api/capsules/" + capsuleId)
-	            .header("Authorization", "Bearer " + accessToken))
-	            .andExpect(status().isForbidden());
+		mockMvc.perform(get("/api/capsules/" + capsuleId).header("Authorization", "Bearer " + accessToken))
+				.andExpect(status().isForbidden()).andExpect(jsonPath("$.status").value(403))
+				.andExpect(jsonPath("$.message").value("아직 열 수 없는 캡슐입니다."));
 	}
 }

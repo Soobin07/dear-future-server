@@ -11,6 +11,7 @@ import com.dearfuture.user.dto.UserSignupRequest;
 import com.dearfuture.user.dto.UserSignupResponse;
 import com.dearfuture.user.service.UserService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -23,7 +24,7 @@ public class UserController {
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
     public UserSignupResponse signup(
-            @RequestBody UserSignupRequest request) {
+    		 @Valid @RequestBody UserSignupRequest request) {
 
         return userService.signup(request);
     }
