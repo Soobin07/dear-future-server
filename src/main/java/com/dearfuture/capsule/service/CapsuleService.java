@@ -12,6 +12,7 @@ import com.dearfuture.capsule.dto.CapsuleCreateRequest;
 import com.dearfuture.capsule.dto.CapsuleCreateResponse;
 import com.dearfuture.capsule.dto.CapsuleDetailResponse;
 import com.dearfuture.capsule.dto.CapsuleListResponse;
+import com.dearfuture.capsule.dto.CapsuleStatus;
 import com.dearfuture.capsule.dto.CapsuleUpdateRequest;
 import com.dearfuture.capsule.dto.CapsuleUpdateResponse;
 import com.dearfuture.capsule.entity.Capsule;
@@ -44,6 +45,7 @@ public class CapsuleService {
                 .content(request.getContent())
                 .openAt(request.getOpenAt())
                 .createdAt(LocalDateTime.now())
+                .isOpened(false)
                 .build();
 
         Capsule savedCapsule = capsuleRepository.save(capsule);
@@ -86,13 +88,13 @@ public class CapsuleService {
             );
         }
         
-        if (LocalDateTime.now().isBefore(capsule.getOpenAt())) {
+        if (!capsule.getIsOpened()) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "아직 열 수 없는 캡슐입니다."
             );
         }
-
+        
         return CapsuleDetailResponse.builder()
                 .id(capsule.getId())
                 .title(capsule.getTitle())
@@ -154,5 +156,27 @@ public class CapsuleService {
         }
 
         capsuleRepository.delete(capsule);
+    }
+    
+    public List<CapsuleListResponse> getMyCapsules(Long userId, CapsuleStatus status) {
+
+        List<Capsule> capsules;
+
+        if (status == null) {
+            capsules = capsuleRepository.findAllByUserId(userId);
+        } else if (status == CapsuleStatus.OPENED) {
+            capsules = capsuleRepository.findAllByUserIdAndIsOpenedTrue(userId);
+        } else {
+            capsules = capsuleRepository.findAllByUserIdAndIsOpenedFalse(userId);
+        }
+
+        return capsules.stream()
+                .map(capsule -> CapsuleListResponse.builder()
+                        .id(capsule.getId())
+                        .title(capsule.getTitle())
+                        .openAt(capsule.getOpenAt())
+                        .createdAt(capsule.getCreatedAt())
+                        .build())
+                .toList();
     }
 }

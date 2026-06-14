@@ -18,34 +18,26 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    	http
-        .csrf(csrf -> csrf.disable())
-        .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        )
-        .exceptionHandling(exception -> exception
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                })
-        )
-        .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/users/signup", "/api/auth/login").permitAll()
-                .anyRequest().authenticated()
-        )
-        .addFilterBefore(
-                jwtAuthenticationFilter,
-                UsernamePasswordAuthenticationFilter.class
-        );
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		http.csrf(csrf -> csrf.disable())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.exceptionHandling(
+						exception -> exception.authenticationEntryPoint((request, response, authException) -> {
+							response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+						}))
+				.authorizeHttpRequests(
+						auth -> auth.requestMatchers("/api/users/signup", "/api/auth/login", "/swagger-ui.html",
+								"/swagger-ui/**", "/v3/api-docs/**").permitAll().anyRequest().authenticated())
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+		return http.build();
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 }

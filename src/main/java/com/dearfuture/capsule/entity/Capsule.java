@@ -67,10 +67,21 @@ public class Capsule {
      */
     private LocalDateTime updatedAt;
     
+    /**
+     * 공개 여부
+     */
+    @Column(nullable = false)
+    private Boolean isOpened;
+    
     public void update(String title, String content, LocalDateTime openAt) {
         this.title = title;
         this.content = content;
         this.openAt = openAt;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void open() {
+        this.isOpened = true;
         this.updatedAt = LocalDateTime.now();
     }
 }
