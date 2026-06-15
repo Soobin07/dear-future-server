@@ -53,6 +53,10 @@ public class CapsuleController {
         return capsuleService.createCapsule(userId, request);
     }
     
+    @Operation(
+            summary = "내 캡슐 목록 조회",
+            description = "현재 로그인한 사용자의 캡슐 목록을 조회합니다."
+    )
     @GetMapping
     public List<CapsuleListResponse> getMyCapsules(
             Authentication authentication,
@@ -61,17 +65,6 @@ public class CapsuleController {
         Long userId = (Long) authentication.getPrincipal();
 
         return capsuleService.getMyCapsules(userId, status);
-    }
-    
-    @Operation(
-            summary = "내 캡슐 목록 조회",
-            description = "현재 로그인한 사용자의 캡슐 목록을 조회합니다."
-    )
-    @GetMapping
-    public List<CapsuleListResponse> getMyCapsules(Authentication authentication) {
-        Long userId = (Long) authentication.getPrincipal();
-
-        return capsuleService.getMyCapsules(userId);
     }
     
     @Operation(
