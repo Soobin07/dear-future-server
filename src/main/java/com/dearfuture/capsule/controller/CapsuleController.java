@@ -29,6 +29,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
+
+import com.dearfuture.global.dto.PageResponse;
 
 @RestController
 @RequestMapping("/api/capsules")
@@ -36,79 +41,53 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Capsule", description = "타임캡슐 API")
 public class CapsuleController {
 
-    private final CapsuleService capsuleService;
+	private final CapsuleService capsuleService;
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    @Operation(
-            summary = "캡슐 생성",
-            description = "미래에 열람할 타임캡슐을 생성합니다."
-    )
-    public CapsuleCreateResponse createCapsule(
-            Authentication authentication,
-            @Valid @RequestBody CapsuleCreateRequest request
-    ) {
-        Long userId = (Long) authentication.getPrincipal();
+	@PostMapping
+	@ResponseStatus(HttpStatus.CREATED)
+	@Operation(summary = "캡슐 생성", description = "미래에 열람할 타임캡슐을 생성합니다.")
+	public CapsuleCreateResponse createCapsule(Authentication authentication,
+			@Valid @RequestBody CapsuleCreateRequest request) {
+		Long userId = (Long) authentication.getPrincipal();
 
-        return capsuleService.createCapsule(userId, request);
-    }
-    
-    @Operation(
-            summary = "내 캡슐 목록 조회",
-            description = "현재 로그인한 사용자의 캡슐 목록을 조회합니다."
-    )
-    @GetMapping
-    public List<CapsuleListResponse> getMyCapsules(
-            Authentication authentication,
-            @RequestParam(required = false) CapsuleStatus status
-    ) {
-        Long userId = (Long) authentication.getPrincipal();
+		return capsuleService.createCapsule(userId, request);
+	}
 
-        return capsuleService.getMyCapsules(userId, status);
-    }
-    
-    @Operation(
-            summary = "캡슐 상세 조회",
-            description = "오픈 날짜가 지난 캡슐만 열람할 수 있습니다."
-    )
-    @GetMapping("/{capsuleId}")
-    public CapsuleDetailResponse getCapsule(
-            Authentication authentication,
-            @PathVariable("capsuleId") Long capsuleId
-    ) {
-        Long userId = (Long) authentication.getPrincipal();
+	@GetMapping
+	@Operation(summary = "내 캡슐 목록 조회", description = "status, page, size 값으로 캡슐 목록을 조회합니다. status는 OPENED 또는 LOCKED입니다.")
+	public PageResponse<CapsuleListResponse> getMyCapsules(Authentication authentication,
+			@RequestParam(required = false) CapsuleStatus status,
+			@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+		Long userId = (Long) authentication.getPrincipal();
 
-        return capsuleService.getCapsule(userId, capsuleId);
-    }
-    
-    @Operation(
-            summary = "캡슐 수정",
-            description = "본인이 작성한 캡슐만 수정할 수 있습니다."
-    )
-    @PutMapping("/{capsuleId}")
-    public CapsuleUpdateResponse updateCapsule(
-            Authentication authentication,
-            @PathVariable("capsuleId") Long capsuleId,
-            @Valid @RequestBody CapsuleUpdateRequest request
-    ) {
-        Long userId = (Long) authentication.getPrincipal();
+		return capsuleService.getMyCapsules(userId, status, pageable);
+	}
 
-        return capsuleService.updateCapsule(userId, capsuleId, request);
-    }
-    
-    @Operation(
-            summary = "캡슐 삭제",
-            description = "본인이 작성한 캡슐만 삭제할 수 있습니다."
-    )
-    @DeleteMapping("/{capsuleId}")
-    public ResponseEntity<Void> deleteCapsule(
-            Authentication authentication,
-            @PathVariable("capsuleId") Long capsuleId
-    ) {
-        Long userId = (Long) authentication.getPrincipal();
+	@Operation(summary = "캡슐 상세 조회", description = "오픈 날짜가 지난 캡슐만 열람할 수 있습니다.")
+	@GetMapping("/{capsuleId}")
+	public CapsuleDetailResponse getCapsule(Authentication authentication, @PathVariable("capsuleId") Long capsuleId) {
+		Long userId = (Long) authentication.getPrincipal();
 
-        capsuleService.deleteCapsule(userId, capsuleId);
+		return capsuleService.getCapsule(userId, capsuleId);
+	}
 
-        return ResponseEntity.noContent().build();
-    }
+	@Operation(summary = "캡슐 수정", description = "본인이 작성한 캡슐만 수정할 수 있습니다.")
+	@PutMapping("/{capsuleId}")
+	public CapsuleUpdateResponse updateCapsule(Authentication authentication, @PathVariable("capsuleId") Long capsuleId,
+			@Valid @RequestBody CapsuleUpdateRequest request) {
+		Long userId = (Long) authentication.getPrincipal();
+
+		return capsuleService.updateCapsule(userId, capsuleId, request);
+	}
+
+	@Operation(summary = "캡슐 삭제", description = "본인이 작성한 캡슐만 삭제할 수 있습니다.")
+	@DeleteMapping("/{capsuleId}")
+	public ResponseEntity<Void> deleteCapsule(Authentication authentication,
+			@PathVariable("capsuleId") Long capsuleId) {
+		Long userId = (Long) authentication.getPrincipal();
+
+		capsuleService.deleteCapsule(userId, capsuleId);
+
+		return ResponseEntity.noContent().build();
+	}
 }
