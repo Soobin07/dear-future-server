@@ -54,13 +54,17 @@ public class CapsuleController {
 	}
 
 	@GetMapping
-	@Operation(summary = "내 캡슐 목록 조회", description = "status, page, size 값으로 캡슐 목록을 조회합니다. status는 OPENED 또는 LOCKED입니다.")
-	public PageResponse<CapsuleListResponse> getMyCapsules(Authentication authentication,
-			@RequestParam(required = false) CapsuleStatus status,
-			@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-		Long userId = (Long) authentication.getPrincipal();
+	@Operation(summary = "내 캡슐 목록 조회", description = "status, keyword, page, size 값으로 캡슐 목록을 조회합니다. status는 OPENED 또는 LOCKED입니다.")
+	public PageResponse<CapsuleListResponse> getMyCapsules(
+	        Authentication authentication,
+	        @RequestParam(required = false) CapsuleStatus status,
+	        @RequestParam(required = false) String keyword,
+	        @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+	        Pageable pageable
+	) {
+	    Long userId = (Long) authentication.getPrincipal();
 
-		return capsuleService.getMyCapsules(userId, status, pageable);
+	    return capsuleService.getMyCapsules(userId, status, keyword, pageable);
 	}
 
 	@Operation(summary = "캡슐 상세 조회", description = "오픈 날짜가 지난 캡슐만 열람할 수 있습니다.")

@@ -18,4 +18,10 @@ public interface CapsuleRepository extends JpaRepository<Capsule, Long> {
 	Page<Capsule> findAllByUserIdAndIsOpenedTrue(Long userId, Pageable pageable);
 
 	Page<Capsule> findAllByUserIdAndIsOpenedFalse(Long userId, Pageable pageable);
+
+	Page<Capsule> findAllByUserIdAndTitleContaining(Long userId, String keyword, Pageable pageable);
+
+	Page<Capsule> findAllByUserIdAndIsOpenedTrueAndTitleContaining(Long userId, String keyword, Pageable pageable);
+
+	Page<Capsule> findAllByUserIdAndIsOpenedFalseAndTitleContaining(Long userId, String keyword, Pageable pageable);
 }

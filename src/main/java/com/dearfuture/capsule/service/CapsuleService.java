@@ -96,15 +96,23 @@ public class CapsuleService {
 		capsuleRepository.delete(capsule);
 	}
 
-	public PageResponse<CapsuleListResponse> getMyCapsules(Long userId, CapsuleStatus status, Pageable pageable) {
+	public PageResponse<CapsuleListResponse> getMyCapsules(Long userId, CapsuleStatus status, String keyword,
+			Pageable pageable) {
+		boolean hasKeyword = keyword != null && !keyword.isBlank();
+
 		Page<Capsule> capsulePage;
 
 		if (status == null) {
-			capsulePage = capsuleRepository.findAllByUserId(userId, pageable);
+			capsulePage = hasKeyword ? capsuleRepository.findAllByUserIdAndTitleContaining(userId, keyword, pageable)
+					: capsuleRepository.findAllByUserId(userId, pageable);
 		} else if (status == CapsuleStatus.OPENED) {
-			capsulePage = capsuleRepository.findAllByUserIdAndIsOpenedTrue(userId, pageable);
+			capsulePage = hasKeyword
+					? capsuleRepository.findAllByUserIdAndIsOpenedTrueAndTitleContaining(userId, keyword, pageable)
+					: capsuleRepository.findAllByUserIdAndIsOpenedTrue(userId, pageable);
 		} else {
-			capsulePage = capsuleRepository.findAllByUserIdAndIsOpenedFalse(userId, pageable);
+			capsulePage = hasKeyword
+					? capsuleRepository.findAllByUserIdAndIsOpenedFalseAndTitleContaining(userId, keyword, pageable)
+					: capsuleRepository.findAllByUserIdAndIsOpenedFalse(userId, pageable);
 		}
 
 		List<CapsuleListResponse> content = capsulePage.getContent().stream()
