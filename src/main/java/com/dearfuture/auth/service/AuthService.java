@@ -36,7 +36,7 @@ public class AuthService {
             );
         }
         
-        String accessToken = jwtTokenProvider.createToken(user);
+        String accessToken = jwtTokenProvider.createAccessToken(user);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)

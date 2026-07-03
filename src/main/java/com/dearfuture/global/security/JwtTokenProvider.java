@@ -19,17 +19,28 @@ import io.jsonwebtoken.security.Keys;
 public class JwtTokenProvider {
 
     private final SecretKey secretKey;
-    private final long expiration;
+    private final long accessExpiration;
+    private final long refreshExpiration;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration}") long expiration
+            @Value("${jwt.access-expiration}") long accessExpiration,
+            @Value("${jwt.refresh-expiration}") long refreshExpiration
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expiration = expiration;
+        this.accessExpiration = accessExpiration;
+        this.refreshExpiration = refreshExpiration;
     }
 
-    public String createToken(User user) {
+    public String createAccessToken(User user) {
+        return createToken(user, accessExpiration);
+    }
+
+    public String createRefreshToken(User user) {
+        return createToken(user, refreshExpiration);
+    }
+
+    private String createToken(User user, long expiration) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
@@ -43,14 +54,10 @@ public class JwtTokenProvider {
                 .signWith(secretKey)
                 .compact();
     }
-    
+
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token);
-
+            parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
@@ -58,12 +65,20 @@ public class JwtTokenProvider {
     }
 
     public Long getUserId(String token) {
-        Claims claims = Jwts.parser()
+        Claims claims = parseClaims(token);
+        return Long.valueOf(claims.getSubject());
+    }
+
+    public Date getExpiration(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getExpiration();
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
-        return Long.valueOf(claims.getSubject());
     }
 }
