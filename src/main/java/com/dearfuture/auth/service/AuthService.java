@@ -1,12 +1,18 @@
 package com.dearfuture.auth.service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.dearfuture.auth.dto.LoginRequest;
-import com.dearfuture.auth.dto.LoginResponse;
+import com.dearfuture.auth.dto.LoginTokenResult;
+import com.dearfuture.auth.entity.RefreshToken;
+import com.dearfuture.auth.repository.RefreshTokenRepository;
 import com.dearfuture.global.security.JwtTokenProvider;
 import com.dearfuture.user.entity.User;
 import com.dearfuture.user.repository.UserRepository;
@@ -15,13 +21,16 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public LoginResponse login(LoginRequest request) {
+    @Transactional
+    public LoginTokenResult login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(
@@ -35,11 +44,30 @@ public class AuthService {
                     "이메일 또는 비밀번호가 올바르지 않습니다."
             );
         }
-        
-        String accessToken = jwtTokenProvider.createAccessToken(user);
 
-        return LoginResponse.builder()
+        String accessToken = jwtTokenProvider.createAccessToken(user);
+        String refreshToken = jwtTokenProvider.createRefreshToken(user);
+
+        LocalDateTime expiresAt = jwtTokenProvider.getExpiration(refreshToken)
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+
+        refreshTokenRepository.findByUser(user)
+                .ifPresentOrElse(
+                        savedToken -> savedToken.update(refreshToken, expiresAt),
+                        () -> refreshTokenRepository.save(
+                                RefreshToken.builder()
+                                        .user(user)
+                                        .token(refreshToken)
+                                        .expiresAt(expiresAt)
+                                        .build()
+                        )
+                );
+
+        return LoginTokenResult.builder()
                 .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .build();
     }
 }
