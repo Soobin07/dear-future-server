@@ -18,6 +18,7 @@ import com.dearfuture.user.entity.User;
 import com.dearfuture.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import com.dearfuture.auth.dto.TokenRefreshResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -68,6 +69,37 @@ public class AuthService {
         return LoginTokenResult.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .build();
+    }
+    
+    public TokenRefreshResponse refresh(String refreshToken) {
+
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Refresh Token이 없습니다."
+            );
+        }
+
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "유효하지 않은 Refresh Token입니다."
+            );
+        }
+
+        RefreshToken savedToken = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "저장되지 않은 Refresh Token입니다."
+                ));
+
+        User user = savedToken.getUser();
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(user);
+
+        return TokenRefreshResponse.builder()
+                .accessToken(newAccessToken)
                 .build();
     }
 }

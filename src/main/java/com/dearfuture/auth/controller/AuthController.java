@@ -16,6 +16,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.CookieValue;
+import com.dearfuture.auth.dto.TokenRefreshResponse;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -49,5 +51,16 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(response);
+    }
+    
+    @PostMapping("/refresh")
+    @Operation(
+            summary = "Access Token 재발급",
+            description = "HttpOnly Cookie의 Refresh Token으로 Access Token을 재발급합니다."
+    )
+    public TokenRefreshResponse refresh(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken
+    ) {
+        return authService.refresh(refreshToken);
     }
 }
